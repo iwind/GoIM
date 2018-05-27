@@ -1,0 +1,4 @@
+*.a
+docs/
+src/tests/
+src/main/master/bin/master
