@@ -1,9 +1,10 @@
-package node
+package worker
 
-type Node struct {
+type Worker struct {
 	Id          string // ID
 	Name        string // 名称
 	Description string // 描述
+	Key         string // 密钥
 
 	IP string // 所在服务器的IP
 
@@ -21,6 +22,20 @@ type Node struct {
 	Options map[string]interface{} // 选项
 	Tags    []string               // 标签，用来将节点进行分组
 	States  []State                // 节点状态，包括CPU、负载、内存等信息
+
+	User struct {
+		Min int64
+		Max int64
+	}
+}
+
+func NewWorker() (*Worker) {
+	return &Worker{
+		User: struct {
+			Min int64
+			Max int64
+		}{Min: 0, Max: 0},
+	}
 }
 
 type State struct {

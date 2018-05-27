@@ -1,16 +1,17 @@
-package master
+package mq
 
 import (
-	"github.com/iwind/TeaMaster/nets"
+	"github.com/iwind/TeaMQ/nets"
 	"sync"
 	"strings"
 	"encoding/json"
 )
 
 type Connection struct {
-	userId string
-	queues map[string]int
-	client *nets.Client
+	userId   int64
+	queues   map[string]int
+	client   *nets.Client
+	isWorker bool
 
 	mutex *sync.Mutex
 }
@@ -29,10 +30,10 @@ func (connection *Connection) Id() int {
 }
 
 func (connection *Connection) IsAuthenticated() bool {
-	return len(connection.userId) > 0
+	return connection.userId > 0
 }
 
-func (connection *Connection) setUserId(userId string) {
+func (connection *Connection) setUserId(userId int64) {
 	connection.userId = userId
 }
 
@@ -103,4 +104,12 @@ func (connection *Connection) ResponseSuccess(message string) {
 
 func (connection *Connection) Close() {
 	connection.client.Close()
+}
+
+func (connection *Connection) SetWorker(isWorker bool) {
+	connection.isWorker = isWorker
+}
+
+func (connection *Connection) IsWorker() bool {
+	return connection.isWorker
 }

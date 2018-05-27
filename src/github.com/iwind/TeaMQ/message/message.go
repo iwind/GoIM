@@ -13,6 +13,7 @@ type Message struct {
 	isSent     bool
 	isReceived bool
 
+	fromUserId int64
 	Queue      string
 	Pattern    string
 	Body       map[string]interface{}
@@ -39,6 +40,16 @@ func Unmarshal(data []byte) (*Message, error) {
 	if found {
 		if idString, ok := id.(string); ok {
 			message.id = idString
+		}
+	}
+
+	// 用户ID
+	fromUserId, found := messageMap["fromUserId"]
+	if found {
+		if fromUserIdInt64, ok := fromUserId.(int64); ok {
+			message.fromUserId = fromUserIdInt64
+		} else if fromUserIdFloat64, ok := fromUserId.(float64); ok {
+			message.fromUserId = int64(fromUserIdFloat64)
 		}
 	}
 
@@ -75,20 +86,30 @@ func Unmarshal(data []byte) (*Message, error) {
 	return message, nil
 }
 
+func (message *Message) FromUserId() int64 {
+	return message.fromUserId
+}
+
 func (message *Message) Encode() ([]byte, error) {
+	uniqueId := fmt.Sprintf("%d%d", time.Now().Nanosecond(), rand.NewSource(time.Now().UnixNano()).Int63())
+	if len(uniqueId) > 32 {
+		uniqueId = uniqueId[:32]
+	}
 	messageJSON := map[string]interface{}{
 		"id":        message.id,
 		"queue":     message.Queue,
 		"createdAt": message.CreatedAt,
 		"body":      message.Body,
 		"meta": map[string]interface{}{
-			"uniqueId": fmt.Sprintf("%d%d", time.Now().Nanosecond(), rand.NewSource(time.Now().UnixNano()).Int63())[:32],
+			"uniqueId": uniqueId,
 			"pattern":  message.Pattern,
 			"sentAt":   float64(time.Now().UnixNano()) / 1000000000,
 		},
 	}
 	data, err := json.Marshal(messageJSON)
-	data = append(data, []byte("\n")...)
+	if err == nil {
+		data = append(data, []byte("\n")...)
+	}
 	return data, err
 }
 
@@ -115,4 +136,26 @@ func (message *Message) StringForKey(key string) (string, bool) {
 	}
 
 	return stringValue, true
+}
+
+func (message *Message) StringForKeyDefault(key string, def string) (string) {
+	value, ok := message.StringForKey(key)
+	if ok {
+		return value
+	}
+	return def
+}
+
+func (message *Message) MapForKey(key string) (map[string]interface{}, bool) {
+	value := message.ValueForKey(key)
+	if value == nil {
+		return nil, false
+	}
+
+	mapValue, ok := value.(map[string]interface{})
+	if !ok {
+		return nil, false
+	}
+
+	return mapValue, true
 }
